@@ -1,0 +1,4 @@
+/test/
+/train/
+train.csv
+/best_model.pth
