@@ -14,7 +14,6 @@ from dataset.dataset import AnimalDataset
 from dataset.load import load_labels
 import torchvision.transforms as tt
 
-
 from sklearn.model_selection import train_test_split
 
 def dump_to_cvs(file_names, predictions):
@@ -47,8 +46,8 @@ transform = tt.Compose([
 train_dataset = AnimalDataset("train", train_labels, transform)
 test_dataset = AnimalDataset("train", test_labels, transform)
 
-train_dataloader = DataLoader(train_dataset, batch_size=64, num_workers=0, shuffle=True)
-test_dataloader = DataLoader(test_dataset, batch_size=64, num_workers=0, shuffle=True)
+train_dataloader = DataLoader(train_dataset, batch_size=32, num_workers=8, pin_memory=True, shuffle=True)
+test_dataloader = DataLoader(test_dataset, batch_size=32, num_workers=8, pin_memory=True, shuffle=True)
 
 device = (
     "cuda"
@@ -65,7 +64,6 @@ optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
 
 def train(dataloader, model, loss_fn, optimizer):
-    size = len(dataloader.dataset)
     model.train()
     for batch in tqdm.tqdm(dataloader):
         X, y = batch

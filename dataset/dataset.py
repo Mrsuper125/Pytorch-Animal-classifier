@@ -1,6 +1,9 @@
+import numpy as np
 from skimage import io
 from torch.utils.data import Dataset
 from PIL import Image
+
+
 
 class AnimalDataset(Dataset):
     def __init__(self, image_path, labels, transform=None, target_transform=None):
