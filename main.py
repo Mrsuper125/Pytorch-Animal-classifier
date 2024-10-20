@@ -8,11 +8,12 @@ from PIL import Image
 from matplotlib import pyplot as plt
 from torch import nn
 from torch.utils.data import DataLoader
+import torchvision.transforms as tt
 
 from NeuralNetwork.network import AnimalNetwork
 from dataset.dataset import AnimalDataset
 from dataset.load import load_labels
-import torchvision.transforms as tt
+from dataset.transforms import load_transform, train_augmenter, validation_load_transform
 
 from sklearn.model_selection import train_test_split
 
@@ -37,17 +38,11 @@ train_keys, test_keys = train_test_split(list(labels.keys()), test_size=0.3, ran
 train_labels = [(label, labels[label]) for label in train_keys]
 test_labels = [(label, labels[label]) for label in test_keys]
 
-transform = tt.Compose([
-    tt.Resize((224, 224)),
-    tt.ToTensor(),
-    tt.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
+train_dataset = AnimalDataset("train", train_labels, load_transform, train_augmenter)
+test_dataset = AnimalDataset("train", test_labels, validation_load_transform)
 
-train_dataset = AnimalDataset("train", train_labels, transform)
-test_dataset = AnimalDataset("train", test_labels, transform)
-
-train_dataloader = DataLoader(train_dataset, batch_size=32, num_workers=8, pin_memory=True, shuffle=True)
-test_dataloader = DataLoader(test_dataset, batch_size=32, num_workers=8, pin_memory=True, shuffle=True)
+train_dataloader = DataLoader(train_dataset, batch_size=16, num_workers=8, pin_memory=True, shuffle=True)
+test_dataloader = DataLoader(test_dataset, batch_size=16, num_workers=8, pin_memory=True, shuffle=True)
 
 device = (
     "cuda"
@@ -92,7 +87,7 @@ def test(dataloader, model, loss_fn):
     model.eval()
     test_loss, correct = 0, 0
     with torch.no_grad():
-        for X, y in dataloader:
+        for X, y in tqdm.tqdm(dataloader):
             X, y = X.to(device), y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()
@@ -113,10 +108,12 @@ def test(dataloader, model, loss_fn):
     print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
-IS_LEARNING = False
+IS_LEARNING = True
 
 if IS_LEARNING:
-    epochs = 15
+    epochs = 20
+
+    #model.load_state_dict(torch.load("best_model.pth", weights_only=True))
     for t in range(epochs):
         print(f"Epoch {t + 1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer)
