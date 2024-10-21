@@ -17,6 +17,10 @@ from dataset.transforms import load_transform, train_augmenter, validation_load_
 
 from sklearn.model_selection import train_test_split
 
+torch.cuda.empty_cache()
+torch.jit.enable_onednn_fusion(True)
+torch.backends.cudnn.benchmark = True
+
 def dump_to_cvs(file_names, predictions):
     if len(file_names) != len(predictions):
         raise ArgumentError(argument=None, message="predictions length does not match file names length")
@@ -32,17 +36,6 @@ classes = {
 }
 
 labels = load_labels("train.csv")
-
-train_keys, test_keys = train_test_split(list(labels.keys()), test_size=0.3, random_state=1)
-
-train_labels = [(label, labels[label]) for label in train_keys]
-test_labels = [(label, labels[label]) for label in test_keys]
-
-train_dataset = AnimalDataset("train", train_labels, load_transform, train_augmenter)
-test_dataset = AnimalDataset("train", test_labels, validation_load_transform)
-
-train_dataloader = DataLoader(train_dataset, batch_size=16, num_workers=8, pin_memory=True, shuffle=True)
-test_dataloader = DataLoader(test_dataset, batch_size=16, num_workers=8, pin_memory=True, shuffle=True)
 
 device = (
     "cuda"
@@ -115,6 +108,18 @@ if IS_LEARNING:
 
     #model.load_state_dict(torch.load("best_model.pth", weights_only=True))
     for t in range(epochs):
+
+        train_keys, test_keys = train_test_split(list(labels.keys()), test_size=0.3, random_state=1)
+
+        train_labels = [(label, labels[label]) for label in train_keys]
+        test_labels = [(label, labels[label]) for label in test_keys]
+
+        train_dataset = AnimalDataset("train", train_labels, load_transform, train_augmenter)
+        test_dataset = AnimalDataset("train", test_labels, validation_load_transform)
+
+        train_dataloader = DataLoader(train_dataset, batch_size=32, num_workers=8, pin_memory=False, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size=32, num_workers=8, pin_memory=False, shuffle=True)
+
         print(f"Epoch {t + 1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer)
         test(test_dataloader, model, loss_fn)
@@ -123,7 +128,7 @@ else:
     model.load_state_dict(torch.load("best_model.pth", weights_only=True))
 
 infer_transform = tt.Compose([
-    tt.Resize((224, 224)),
+    tt.Resize((512, 512)),
     tt.ToTensor(),
     tt.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])

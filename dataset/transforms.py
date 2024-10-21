@@ -88,12 +88,12 @@ train_augmenter = tt.Compose([
 
 load_transform = tt.Compose([
 
-    tt.Resize((224, 224)),
+    tt.Resize((512, 512)),
     tt.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
 validation_load_transform = tt.Compose([
     tt.ToTensor(),
-    tt.Resize((224, 224)),
+    tt.Resize((512, 512)),
     tt.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
